@@ -1,0 +1,8 @@
+CREATE DATABASE IF NOT EXISTS school_db;
+
+USE school_db;
+
+CREATE TABLE IF NOT EXISTS students (
+    reg_no VARCHAR(50) NOT NULL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL
+);
