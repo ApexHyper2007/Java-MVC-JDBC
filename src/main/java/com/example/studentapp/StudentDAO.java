@@ -18,6 +18,11 @@ public class StudentDAO {
     private final String password;
 
     public StudentDAO() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            System.err.println("[WARN] MySQL JDBC Driver class not found: " + e.getMessage());
+        }
         this.url = environmentOrDefault("SCHOOL_DB_URL", DEFAULT_URL);
         this.username = environmentOrDefault("SCHOOL_DB_USER", "root");
         this.password = System.getenv("SCHOOL_DB_PASSWORD");
