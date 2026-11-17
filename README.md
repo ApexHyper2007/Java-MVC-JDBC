@@ -1,31 +1,40 @@
-# Student Management System (Java MVC + JDBC)
+# Student Management System (Python Tkinter Frontend + Java MVC, JDBC & MySQL)
 
-A modular, clean architecture Java console application demonstrating the **Model-View-Controller (MVC)** architectural pattern combined with **JDBC (Java Database Connectivity)** and **MySQL**.
-
----
-
-## 🌟 Key Features & Queries
-
-The application implements full CRUD and search operations using `PreparedStatement` to ensure security against SQL injection:
-
-- **Create / Upsert**: Inserts new student records or updates them if duplicate (`ON DUPLICATE KEY UPDATE`).
-- **Read (By ID)**: Searches student by registration number (`SELECT ... WHERE registration_number = ?`).
-- **Read All**: Fetches all students ordered by registration number (`SELECT ... ORDER BY registration_number`).
-- **Search (Fuzzy / Keyword)**: Case-insensitive search by student name using `LIKE %keyword%`.
-- **Update**: Updates student name by registration number (`UPDATE students SET name = ? WHERE registration_number = ?`).
-- **Delete**: Deletes records by registration number (`DELETE FROM students WHERE registration_number = ?`).
-- **Aggregate Count**: Queries total number of students in the table (`SELECT COUNT(*) FROM students`).
+**Course**: 21CSC203P - Advanced Programming Practice  
+**Institution**: SRM Institute of Science and Technology, Kattankulathur  
+**Student**: Tanishk Kumar Yadav (RA2511003011310, B.Tech CSE Core B2)
 
 ---
 
-## 🏗️ Architecture (MVC Pattern)
+## 🌟 Overview & Architecture
+
+The application implements a desktop **Student Management System** split into a modern **Python Tkinter Desktop GUI** frontend and a modular **Java MVC + JDBC** REST API backend communicating via local HTTP/JSON:
 
 ```text
-├── Model (Student.java)               -> Immutable Java Record holding registration number & name
-├── View (StudentView.java)            -> Console presentation layer for student details and status messages
-├── Controller (StudentController.java)-> Orchestrates interactions between the View and DAO
-├── DAO (StudentDAO.java)              -> Direct JDBC operations and MySQL query executions
-└── Main (Main.java)                   -> Entry point simulating realistic CRUD operations
+┌────────────────────────────────────────────────────────┐
+│               Python Tkinter Frontend                  │
+│   (Form Entries, CRUD Buttons, Treeview Table, Search) │
+└───────────────────────────┬────────────────────────────┘
+                            │ HTTP / JSON (localhost:8080)
+┌───────────────────────────▼────────────────────────────┐
+│                    Java Controller                     │
+│           (Maps HTTP endpoints to Java service)        │
+└───────────────────────────┬────────────────────────────┘
+                            │ Method calls
+┌───────────────────────────▼────────────────────────────┐
+│                     Service Layer                      │
+│        (Validates input, checks duplicate reg_no)      │
+└───────────────────────────┬────────────────────────────┘
+                            │ DAO calls
+┌───────────────────────────▼────────────────────────────┐
+│                      Student DAO                       │
+│       (Executes parameterized SQL queries via JDBC)     │
+└───────────────────────────┬────────────────────────────┘
+                            │ JDBC connection
+┌───────────────────────────▼────────────────────────────┐
+│                    MySQL Database                      │
+│          Database: school_db | Table: students         │
+└────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -34,117 +43,91 @@ The application implements full CRUD and search operations using `PreparedStatem
 
 ```text
 Java MVC + JDBC/
+├── app.py                     # Python Tkinter Desktop Frontend
 ├── sql/
-│   └── setup.sql              # Database & table creation schema
+│   └── setup.sql              # Database & table creation schema (reg_no, name)
 ├── src/main/java/com/example/studentapp/
-│   ├── Main.java              # Application driver
-│   ├── Student.java           # Model (Java Record)
-│   ├── StudentController.java # Controller
-│   ├── StudentDAO.java        # Data Access Object (JDBC)
-│   └── StudentView.java       # View layer
-├── .gitignore                 # Excludes target/, .tools/, .m2/, etc.
-├── pom.xml                    # Maven build configuration & dependencies
+│   ├── Main.java              # Java HTTP Server entry point (Port 8080)
+│   ├── Student.java           # Model record (regNo, name)
+│   ├── StudentController.java # HTTP Controller for REST API endpoints
+│   ├── StudentService.java    # Service Layer with validation & business logic
+│   ├── StudentDAO.java        # Data Access Object executing JDBC queries
+│   └── StudentView.java       # Console output formatter
+├── pom.xml                    # Maven build configuration & MySQL driver
+├── .gitignore                 # Ignores target/, .tools/, .m2/, *.pyc
 └── README.md                  # Project documentation
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🔌 API Operations
 
-### 1. Prerequisites
-- **JDK 17+** (tested on JDK 25)
-- **Apache Maven 3.9+**
-- **MySQL Server 8.0+**
+| HTTP Method & Endpoint | Operation | Description |
+| :--- | :--- | :--- |
+| `GET /api/health` | Health Check | Verifies Java backend and MySQL database connectivity |
+| `GET /api/students` | Get All Students | Retrieves all student records |
+| `GET /api/students?q={term}` | Search | Case-insensitive search on registration number and name |
+| `POST /api/students` | Insert Student | Creates a new student record (rejects duplicate `reg_no`) |
+| `PUT /api/students/{reg_no}` | Update Student | Updates student name for the given registration number |
+| `DELETE /api/students/{reg_no}` | Delete Student | Deletes student record by registration number |
 
-### 2. Database Setup
-Make sure your MySQL server is running, then execute [`sql/setup.sql`](sql/setup.sql):
+---
 
+## 🗄️ Database Design
+
+**Database**: `school_db`  
+**Table**: `students`
+
+| Field | Data Type | Constraint / Purpose |
+| :--- | :--- | :--- |
+| `reg_no` | `VARCHAR(30)` | Primary Key; Unique student registration number |
+| `name` | `VARCHAR(100)` | NOT NULL; Student name |
+
+To initialize or verify:
 ```sql
 CREATE DATABASE IF NOT EXISTS school_db;
 USE school_db;
-
 CREATE TABLE IF NOT EXISTS students (
-    registration_number VARCHAR(50) NOT NULL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL
+    reg_no VARCHAR(30) NOT NULL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
 );
-```
-
-Or via terminal:
-```powershell
-cmd /c "mysql -u root -p < sql\setup.sql"
-```
-
-### 3. Environment Variables
-The application reads database credentials from environment variables:
-- `SCHOOL_DB_PASSWORD` (Required): Your MySQL password.
-- `SCHOOL_DB_USER` (Optional, defaults to `root`).
-- `SCHOOL_DB_URL` (Optional, defaults to `jdbc:mysql://localhost:3306/school_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`).
-
-To set the password in PowerShell:
-```powershell
-# For the current session:
-$env:SCHOOL_DB_PASSWORD = "your_mysql_password"
-
-# Or persistently for your user:
-[Environment]::SetEnvironmentVariable('SCHOOL_DB_PASSWORD', 'your_mysql_password', 'User')
-```
-
-### 4. Build and Run
-
-Using Maven:
-```powershell
-# Compile
-mvn clean compile
-
-# Run
-mvn exec:java
-```
-
-*(If using the bundled local Maven in `.tools`)*:
-```powershell
-& ".\.tools\apache-maven-3.9.11\bin\mvn.cmd" "-Dmaven.repo.local=.m2\repository" clean compile
-& ".\.tools\apache-maven-3.9.11\bin\mvn.cmd" "-Dmaven.repo.local=.m2\repository" exec:java
 ```
 
 ---
 
-## 📋 Sample Output
+## 🚀 How to Run the Application
 
-```text
-=== 1. Inserting Sample Students ===
-  -> Registration No: REG-2026-001    | Name: Aarav Sharma
-  -> Registration No: REG-2026-002    | Name: Meera Iyer
-  -> Registration No: REG-2026-003    | Name: Rohan Verma
+### Step 1: Ensure MySQL Server is Running
+Start your MySQL Server (via Windows Services `MySQL80`, MySQL Workbench, or XAMPP).
 
-=== 2. Total Count Query ===
-[INFO] Total student count in database: 3
+### Step 2: Start the Java Backend
+Open a terminal in the project root:
 
-=== 3. Find All Query ===
-==================================================
-  ALL REGISTERED STUDENTS
-==================================================
-  -> Registration No: REG-2026-001    | Name: Aarav Sharma
-  -> Registration No: REG-2026-002    | Name: Meera Iyer
-  -> Registration No: REG-2026-003    | Name: Rohan Verma
+```powershell
+# 1. Set your MySQL credentials
+$env:SCHOOL_DB_PASSWORD = "your_mysql_password"
 
-=== 4. Search By Name Query ===
-==================================================
-  SEARCH RESULTS FOR: 'Sharma'
-==================================================
-  -> Registration No: REG-2026-001    | Name: Aarav Sharma
-
-=== 5. Update Query ===
-[INFO] Successfully updated name for REG-2026-001 to 'Aarav K. Sharma'.
-
-=== 6. Delete Query ===
-[INFO] Successfully deleted student with registration number: REG-2026-003
-
-=== 7. Final Database State ===
-==================================================
-  ALL REGISTERED STUDENTS
-==================================================
-  -> Registration No: REG-2026-001    | Name: Aarav K. Sharma
-  -> Registration No: REG-2026-002    | Name: Meera Iyer
-
-[INFO] Total student count in database: 2
+# 2. Build and launch the Java backend server
+& ".\.tools\apache-maven-3.9.11\bin\mvn.cmd" "-Dmaven.repo.local=.m2\repository" clean compile
+& ".\.tools\apache-maven-3.9.11\bin\mvn.cmd" "-Dmaven.repo.local=.m2\repository" exec:java
 ```
+*(Or use standard `mvn clean compile` and `mvn exec:java` if Maven is in your PATH).*
+
+You should see:
+```text
+[INFO] Student API server listening on http://localhost:8080
+==================================================
+ Student Management Backend is running!
+ API URL: http://localhost:8080/api/students
+ Health Check: http://localhost:8080/api/health
+==================================================
+```
+
+### Step 3: Launch the Python Tkinter Frontend
+Open a **second terminal** window in the same folder and run:
+
+```powershell
+python app.py
+```
+
+The Tkinter GUI will open, display your database connection status at the bottom, and allow you to Add, Update, Delete, Search, and Refresh student records with instant GUI feedback.
