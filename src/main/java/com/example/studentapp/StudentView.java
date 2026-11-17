@@ -5,7 +5,7 @@ import java.util.List;
 public class StudentView {
     public void displayStudent(Student student) {
         System.out.printf("  -> Registration No: %-15s | Name: %s%n",
-                student.registrationNumber(), student.name());
+                student.regNo(), student.name());
     }
 
     public void displayStudentList(String title, List<Student> students) {

@@ -1,44 +1,35 @@
 package com.example.studentapp;
 
-import java.sql.SQLException;
-import java.util.List;
-
 public class Main {
     public static void main(String[] args) {
-        List<Student> sampleStudents = List.of(
-                new Student("REG-2026-001", "Aarav Sharma"),
-                new Student("REG-2026-002", "Meera Iyer"),
-                new Student("REG-2026-003", "Rohan Verma"));
+        int port = 8080;
+        String portEnv = System.getenv("PORT");
+        if (portEnv != null && !portEnv.isBlank()) {
+            try {
+                port = Integer.parseInt(portEnv.trim());
+            } catch (NumberFormatException ignored) {}
+        }
 
         try {
-            StudentController controller = new StudentController(new StudentDAO(), new StudentView());
+            StudentDAO dao = new StudentDAO();
+            StudentService service = new StudentService(dao);
+            StudentController controller = new StudentController(service);
 
-            System.out.println("=== 1. Inserting Sample Students ===");
-            for (Student student : sampleStudents) {
-                controller.addAndDisplay(student);
-            }
+            controller.start(port);
+            System.out.println("==================================================");
+            System.out.println(" Student Management Backend is running!");
+            System.out.println(" API URL: http://localhost:" + port + "/api/students");
+            System.out.println(" Health Check: http://localhost:" + port + "/api/health");
+            System.out.println(" Press Ctrl+C in this terminal to stop the server.");
+            System.out.println("==================================================");
 
-            System.out.println("\n=== 2. Total Count Query ===");
-            controller.displayTotalCount();
+            // Keep main thread alive
+            Thread.currentThread().join();
 
-            System.out.println("=== 3. Find All Query ===");
-            controller.displayAllStudents();
-
-            System.out.println("=== 4. Search By Name Query ===");
-            controller.searchByName("Sharma");
-
-            System.out.println("=== 5. Update Query ===");
-            controller.updateStudentName("REG-2026-001", "Aarav K. Sharma");
-
-            System.out.println("\n=== 6. Delete Query ===");
-            controller.deleteStudent("REG-2026-003");
-
-            System.out.println("\n=== 7. Final Database State ===");
-            controller.displayAllStudents();
-            controller.displayTotalCount();
-
-        } catch (SQLException | IllegalStateException exception) {
-            System.err.println("Student application failed: " + exception.getMessage());
+        } catch (InterruptedException e) {
+            System.out.println("[INFO] Server stopped.");
+        } catch (Exception exception) {
+            System.err.println("Student backend application failed to start: " + exception.getMessage());
             System.exit(1);
         }
     }
