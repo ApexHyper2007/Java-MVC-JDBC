@@ -1,8 +1,8 @@
 package com.example.studentapp;
 
-public record Student(String registrationNumber, String name) {
+public record Student(String regNo, String name) {
     public Student {
-        if (registrationNumber == null || registrationNumber.isBlank()) {
+        if (regNo == null || regNo.isBlank()) {
             throw new IllegalArgumentException("Registration number must not be blank.");
         }
         if (name == null || name.isBlank()) {
